@@ -14,7 +14,7 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 }
 
-def main(url):
+def main(url, file_store_path):
     parsed_url = urlparse(url)
     print(parsed_url)
 
@@ -44,7 +44,7 @@ def main(url):
     print(f"Content length: {content_length}")
 
     filename = parsed_url.path.split('/')[-1]
-    file_path = os.path.join(PROJECT_ROOT, filename)
+    file_path = os.path.join(file_store_path, filename)
 
     downloaded_size = 0
 
@@ -64,13 +64,17 @@ def main(url):
 def update(downloaded_size, total_size, chunk):
     with threading.Lock():
         downloaded_size += len(chunk)
-        print(f"\rСкачано {downloaded_size} байт из {total_size}", end="")
+        print(f"\rDownloaded {downloaded_size} bytes out of {total_size}", end="")
     return downloaded_size
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         url = sys.argv[1]
-        main(url)
+        if len(sys.argv) > 2:
+            file_store_path = sys.argv[2]
+        else:
+            file_store_path = PROJECT_ROOT
+    main(url)
     else:
-        print("Пожалуйста, передайте URL как аргумент")
+        print("Please provide a URL")
