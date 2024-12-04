@@ -1,7 +1,6 @@
 import os
 import http.client
 import threading
-import time
 import sys
 from urllib.parse import urlparse
 
@@ -31,35 +30,33 @@ def main(url):
     else:
         conn = http.client.HTTPConnection(host)
 
-    conn.request("GET", path, headers={"Host": host, 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
+    conn.request("GET", path, headers={"Host": host})
     response = conn.getresponse()
 
     if not str(response.status).startswith('2'):
         url = HTTP_SCHEME + "://" + url
         parsed_url = urlparse(url)
         conn = http.client.HTTPConnection(host)
-        conn.request("GET", path, headers={'Host': host, 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
+        conn.request("GET", path, headers={'Host': host})
         response = conn.getresponse()
 
     content_length = int(response.getheader('content-length', 0))
     print(f"Content length: {content_length}")
 
-    filename = "test"  #todo создавать рандомное? или можно как-то сразу получить?
+    filename = parsed_url.path.split('/')[-1]
     file_path = os.path.join(PROJECT_ROOT, filename)
 
     downloaded_size = 0
 
-    with open(file_path + '.jpg', 'wb') as file:
+    with open(file_path, 'wb') as file:
         while True:
-            chunk = response.read(8192)
+            chunk = response.read(1024)
             if not chunk:
                 break
 
             file.write(chunk)
-            update(downloaded_size, content_length, chunk)
-            time.sleep(1)
-
-    print(response.headers)
+            downloaded_size = update(downloaded_size, content_length, chunk)
+        print()
 
     print(response.status, response.reason)
 
@@ -67,10 +64,13 @@ def main(url):
 def update(downloaded_size, total_size, chunk):
     with threading.Lock():
         downloaded_size += len(chunk)
-        if total_size == 0:
-            total_size = downloaded_size
         print(f"\rСкачано {downloaded_size} байт из {total_size}", end="")
+    return downloaded_size
 
 
 if __name__ == "__main__":
-    main('testurl')
+    if len(sys.argv) > 1:
+        url = sys.argv[1]
+        main(url)
+    else:
+        print("Пожалуйста, передайте URL как аргумент")
